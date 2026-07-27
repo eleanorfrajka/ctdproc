@@ -25,7 +25,7 @@ class CTDCoefficients:
     oxygen_primary: Optional[Oxygen43Coefficients] = None
     oxygen_secondary: Optional[Oxygen43Coefficients] = None
     chlorophyll: Optional[ECOCoefficients] = None
-    turbidity: Optional[object] = None  # It is missing
+    turbidity: Optional[ECOCoefficients] = None  # It is missing
     altimeter: Optional[AltimeterCoefficients] = None
 
 
@@ -101,6 +101,8 @@ def load_xmlcon(xml_file: str) -> CTDCoefficients:
                 t5=float(press.findtext("T5")),
                 AD590M=float(press.findtext("AD590M")),
                 AD590B=float(press.findtext("AD590B")),
+                offset=float(press.findtext("Offset")),
+                slope=float(press.findtext("Slope")),
             )
 
         # --------------------------------------------------
@@ -139,6 +141,16 @@ def load_xmlcon(xml_file: str) -> CTDCoefficients:
             coeffs.chlorophyll = ECOCoefficients(
                 slope=float(chl.findtext("ScaleFactor")),
                 offset=float(chl.findtext("Vblank")),
+            )
+
+        # --------------------------------------------------
+        # TURBIDITY
+        # --------------------------------------------------
+        tur = sensor.find("TurbidityMeter")
+        if tur is not None:
+            coeffs.turbidity = ECOCoefficients(
+                slope=float(tur.findtext("ScaleFactor")),
+                offset=float(tur.findtext("DarkVoltage")),
             )
 
         # --------------------------------------------------

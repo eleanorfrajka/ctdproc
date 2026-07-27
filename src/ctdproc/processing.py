@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.signal import butter, filtfilt
+import gsw
 
 # Import modified seabirdscientific
 from seabirdscientific import processing as proc
@@ -97,7 +98,7 @@ def crosshigh(
 
 
 def alp_tau(
-    data: pd.DataFrame, param: list, pi: float, pf: float, figure: bool = False
+        data: pd.DataFrame, param: list, pi: float, pf: float, tbin: float, figure: bool = False
 ) -> float:
     """ For a given alpha and Ta compute the average absolute error of salinity between up- down- profile
     """
@@ -109,7 +110,8 @@ def alp_tau(
     data_i.loc[indx2, param[2]] = np.nan
     data_i[param[1]] = data_i[param[1]].interpolate(limit_direction="both")
     data_i[param[2]] = data_i[param[2]].interpolate(limit_direction="both")
-
+    data_i[param[2]] = gsw.SP_from_C(10*data_i[param[2]].values, t=data_i[param[1]].values, p=data_i[param[0]].values)
+    
     peak_pressure_idx = np.argmax(data_i[param[0]])
 
     fpar1_dn = data_i[param[1]][0:peak_pressure_idx]
@@ -124,7 +126,7 @@ def alp_tau(
 
     min_max = np.min([fpar1_dn[mask_dn].max(), fpar1_up[mask_up].max()])
     max_min = np.max([fpar1_dn[mask_dn].min(), fpar1_up[mask_up].min()])
-    temp_group = np.arange(max_min, min_max, 0.1)
+    temp_group = np.arange(max_min, min_max, tbin)
 
     pro_dn = pd.DataFrame({param[1]: fpar1_dn[mask_dn], param[2]: fpar2_dn[mask_dn]})
     pro_up = pd.DataFrame({param[1]: fpar1_up[mask_up], param[2]: fpar2_up[mask_up]})
@@ -168,6 +170,7 @@ def find_opt_alp_tat(
     param: list,
     pi: float,
     pf: float,
+    tbin: float,
     figure: bool,
 ) -> np.ndarray:
     """Try to find the best alpha and Tau values.
@@ -185,7 +188,7 @@ def find_opt_alp_tat(
                 sample_interval=1 / 24,  # Modified 
             )
             max_value[r, c] = alp_tau(
-                data_i, [param[0], param[1], param[3]], pi, pf, figure=False
+                data_i, [param[0], param[1], param[3]], pi, pf, tbin, figure=False
             )
     return max_value
 
