@@ -209,9 +209,13 @@ def convert_pressure_digiquartz(
     t0_squared_over_t_squared = (t0**2) / (t**2)
     one_minus_ratio = 1 - t0_squared_over_t_squared
     p = c * one_minus_ratio * (1 - d * one_minus_ratio)
+    
+  #  p = (coefs.slope * p) + coefs.offset
     abs_pressure = p - sea_level_pressure
+  #  abs_pressure = (coefs.slope * abs_pressure) + coefs.offset
     if units == "dbar":
         abs_pressure *= PSI_TO_DBAR
+    abs_pressure = (coefs.slope * abs_pressure) + coefs.offset
     return abs_pressure
 
 

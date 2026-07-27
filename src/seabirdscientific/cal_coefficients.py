@@ -105,6 +105,8 @@ class PressureDigiquartzCoefficients:
     t3: float
     t4: float
     t5: float
+    slope: float
+    offset: float
     AD590M: float
     AD590B: float
 
@@ -120,6 +122,8 @@ class PressureDigiquartzCoefficients:
         t3: float,
         t4: float,
         t5: float,
+        slope: float,
+        offset: float,
         AD590M: Optional[float] = None,
         AD590B: Optional[float] = None,
     ):
@@ -133,6 +137,8 @@ class PressureDigiquartzCoefficients:
         self.t3 = t3
         self.t4 = t4
         self.t5 = t5
+        self.slope = slope
+        self.offset = offset
         if AD590M is not None:
             self.AD590M = AD590M
         else:
