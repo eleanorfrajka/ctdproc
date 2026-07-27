@@ -12,7 +12,7 @@ authors = [
 ]
 
 # For conda
-requires-python = ">=3.12, <3.13"
+requires-python = ">=3.11, <3.13"
 
 classifiers = [
     "Programming Language :: Python :: 3.12",
@@ -28,6 +28,7 @@ dependencies = [
     "pandas~=2.3.3",
     "scipy~=1.13.1",
     "plotly~=6.3.1",
+    "PyYAML~=6.0",
 ]
 
 [tool.setuptools.packages.find]

@@ -298,7 +298,7 @@ def cnv_to_instrument_data(filepath: Union[Path, str]) -> InstrumentData:
 
     logger.info("Unpacking instrument data from file: %s", filepath)
 
-    with open(filepath, mode="r") as cnv:
+    with open(filepath, mode="r", encoding="latin-1") as cnv:
         for line in cnv:
             if line.startswith("*") or line.startswith("#"):
                 if line.startswith("# nvalues = "):
@@ -405,7 +405,7 @@ def read_hex_file(
     rows = []
     is_data = False
 
-    with open(filepath, "r") as file:
+    with open(filepath, "r", encoding="latin-1") as file:
         for line in file:
 
             # start of data section

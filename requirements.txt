@@ -8,7 +8,9 @@ pandas~=2.3.3
 scipy~=1.13.1
 plotly~=6.3.1
 
+PyYAML~=6.0
+
 # For Jupyter
-jupyter>=1.0.0
-notebook~=7.4.7
+#jupyter>=1.0.0
+#notebook~=7.4.7
 
