@@ -97,6 +97,116 @@ def crosshigh(
     return best_corr
 
 
+def alp_tau_fast(
+    p_dn, t_dn, c_dn, 
+    p_up, t_up, c_up, 
+    temp_bins
+) -> float:
+    """ For a given alpha and Ta compute the average absolute error of salinity between up- down- profile"""
+    
+
+    sal_dn = gsw.SP_from_C(10 * c_dn, t=t_dn, p=p_dn)
+    sal_up = gsw.SP_from_C(10 * c_up, t=t_up, p=p_up)
+
+
+    sal_dn = np.nan_to_num(sal_dn, nan=np.nan)
+    sal_up = np.nan_to_num(sal_up, nan=np.nan)
+
+
+    counts_dn, _ = np.histogram(t_dn, bins=temp_bins)
+    counts_up, _ = np.histogram(t_up, bins=temp_bins)
+    
+    sum_sal_dn, _ = np.histogram(t_dn, bins=temp_bins, weights=sal_dn)
+    sum_sal_up, _ = np.histogram(t_up, bins=temp_bins, weights=sal_up)
+
+
+    with np.errstate(divide='ignore', invalid='ignore'):
+        avg_sal_dn = sum_sal_dn / counts_dn
+        avg_sal_up = sum_sal_up / counts_up
+
+
+    valid_mask = (counts_dn > 0) & (counts_up > 0) & (~np.isnan(avg_sal_dn)) & (~np.isnan(avg_sal_up))
+
+    if not np.any(valid_mask):
+        return np.nan
+
+
+    return float(np.mean(np.abs(avg_sal_dn[valid_mask] - avg_sal_up[valid_mask])))
+
+
+
+
+def find_opt_alp_tat_fast(
+    alpha_r: np.ndarray,
+    tau_r: np.ndarray,
+    data: pd.DataFrame,
+    param: list,  # [pressure, temperature, conductivity]
+    pi: float,
+    pf: float,
+    tbin: float,
+) -> np.ndarray:
+    """Try to find the best alpha and Tau values."""
+
+
+    data_i = data.copy()
+
+    for p in param[:3]:
+        data_i.loc[data_i[p] == BAD_FLAG_VALUE, p] = np.nan
+        data_i[p] = data_i[p].interpolate(limit_direction="both")
+
+
+    pres = data_i[param[0]].values
+    temp = data_i[param[1]].values
+    cond = data_i[param[2]].values
+
+
+    peak_idx = np.argmax(pres)
+
+    p_dn_raw, p_up_raw = pres[:peak_idx], pres[peak_idx + 1:]
+    t_dn_raw, t_up_raw = temp[:peak_idx], temp[peak_idx + 1:]
+    c_dn_raw, c_up_raw = cond[:peak_idx], cond[peak_idx + 1:]
+
+
+    mask_dn = (p_dn_raw >= pi) & (p_dn_raw <= pf)
+    mask_up = (p_up_raw >= pi) & (p_up_raw <= pf)
+
+
+    p_dn, t_dn, c_dn = p_dn_raw[mask_dn], t_dn_raw[mask_dn], c_dn_raw[mask_dn]
+    p_up, t_up, c_up = p_up_raw[mask_up], t_up_raw[mask_up], c_up_raw[mask_up]
+
+
+    min_max = np.min([t_dn.max(), t_up.max()])
+    max_min = np.max([t_dn.min(), t_up.min()])
+    temp_bins = np.arange(max_min, min_max, tbin)
+
+
+    error_matrix = np.zeros((len(alpha_r), len(tau_r)))
+
+
+    for r, alpha in enumerate(alpha_r):
+        for c, tau in enumerate(tau_r):
+
+            c_dn_corr = proc.cell_thermal_mass(
+                temperature_C=t_dn, conductivity_Sm=c_dn,
+                amplitude=alpha, time_constant=tau, sample_interval=1/24
+            )
+            c_up_corr = proc.cell_thermal_mass(
+                temperature_C=t_up, conductivity_Sm=c_up,
+                amplitude=alpha, time_constant=tau, sample_interval=1/24
+            )
+
+            # 
+            error_matrix[r, c] = alp_tau_fast(
+                p_dn, t_dn, c_dn_corr,
+                p_up, t_up, c_up_corr,
+                temp_bins
+            )
+
+    return error_matrix
+
+
+
+
 def alp_tau(
         data: pd.DataFrame, param: list, pi: float, pf: float, tbin: float, figure: bool = False
 ) -> float:
