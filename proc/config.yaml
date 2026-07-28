@@ -4,6 +4,8 @@ constants:
   ind: [30,38] #expect name_000.hex
   convert: 'yes'
   time_ref: 'System UTC'
+  data_dir: "/Volumes/T9ifmeo/odb2026/CTD/raw"
+  output_dir: "/Volumes/T9ifmeo/odb2026/CTD/ctdproc_nc"
 
 features:
 #  - name: "align"

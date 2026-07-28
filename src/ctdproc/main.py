@@ -44,11 +44,17 @@ def CTD_process(yaml_file):
     apply_loop_edit,
     apply_bin,
     )
+    from pathlib import Path
+
     with open(yaml_file, "r") as file:
         config = yaml.safe_load(file)
     if type(config['constants']['sample_interval'])==str:
         numi,denomi=config['constants']['sample_interval'].split('/')
         sample_interval=float(numi)/float(denomi)
+
+    data_dir = Path(config['constants'].get('data_dir', '../data'))
+    output_dir = Path(config['constants'].get('output_dir', '.'))
+    output_dir.mkdir(parents=True, exist_ok=True)
 
 
     BAD_FLAG_VALUE = np.float64(-9.99e-29)
@@ -74,12 +80,13 @@ def CTD_process(yaml_file):
     
 
         
-        raw_data = load_raw_data("../data/"+config['constants']['name']+'_'+str(j).zfill(3)+'.hex')
-        data = convert_data(raw_data,"../data/"+config['constants']['name']+'_'+str(j).zfill(3)+'.xmlcon',sample_interval)
+        base = config['constants']['name'] + '_' + str(j).zfill(3)
+        raw_data = load_raw_data(data_dir / (base + '.hex'))
+        data = convert_data(raw_data, data_dir / (base + '.xmlcon'), sample_interval)
         head=[]
         head_coeff=[]
-        head=extract_head_hex("../data/"+config['constants']['name']+'_'+str(j).zfill(3)+'.hex')
-        head_coeff=extract_head_hex("../data/"+config['constants']['name']+'_'+str(j).zfill(3)+'.XMLCON')
+        head=extract_head_hex(data_dir / (base + '.hex'))
+        head_coeff=extract_head_hex(data_dir / (base + '.XMLCON'))
         text_content =[]
         text_content.extend(head)
         text_content.append("* \n")
@@ -118,7 +125,8 @@ def CTD_process(yaml_file):
                 text_process.extend(log)
 
             elif func_name == 'bin':
-                bin_results, bin_logs, filenames = apply_bin(data,step, BAD_FLAG_VALUE, config['constants']['name']+"_"+str(j).zfill(3),)
+                bin_results, bin_logs, filenames = apply_bin(data,step, BAD_FLAG_VALUE, base,)
+                filenames = [str(output_dir / f) for f in filenames]
             
                 # text_process.extend(log)
             
@@ -152,13 +160,7 @@ def CTD_process(yaml_file):
 
 
         if config['constants']['convert'] == 'yes':
-            nominal_name = (
-                
-                config['constants']['name']
-                + "_"
-                + str(j).zfill(3)
-                + "_24hz.cnv"
-            )
+            nominal_name = str(output_dir / (base + "_24hz.cnv"))
         
             if config and config.get('constants', {}).get('time_ref') is not None:
                 

@@ -12,7 +12,7 @@ def extract_head_hex(
     """
     for_heading = []
 
-    with open(hex_file, "r") as file:
+    with open(hex_file, "r", encoding="latin-1") as file:
         for line in file:
 
             if line.startswith("*END*"):
