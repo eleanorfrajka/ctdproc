@@ -713,29 +713,24 @@ def bin_average(
     _dataset = _dataset.drop(_dataset[_dataset["nbin"] < min_scans].index)
     _dataset = _dataset.drop(_dataset[_dataset["nbin"] > max_scans].index)
 
-    if interpolate:
-
-        def interp(p_p, x_p, p_c, x_c, p_i):
-            """Interpolate according to SBE Data Processing manual
-            version 7.26.8, page 89
-            """
-            x_i = ((x_c - x_p) * (p_i - p_p) / (p_c - p_p)) + x_p
-            return x_i
-
+    if interpolate and len(_dataset) > 1:
         excluded_columns = ["nbin", "flag", "bin_number", bin_variable, "midpoint"]
-        for column in (_dataset.columns).difference(excluded_columns):
-            interp_result = []
-            for n in range(len(_dataset[column])):
-                n_p = 1 if n == 0 else n - 1
-                p_p = _dataset[bin_variable].iloc[n_p]
-                x_p = _dataset[column].iloc[n_p]
-                p_c = _dataset[bin_variable].iloc[n]
-                x_c = _dataset[column].iloc[n]
-                p_i = _dataset["midpoint"].iloc[n]
-                x_i = interp(p_p, x_p, p_c, x_c, p_i)
-                interp_result.append(x_i)
 
-            _dataset[column] = pd.Series(interp_result, index=_dataset.index)
+        # Pressure and midpoint arrays are the same for every column — compute once.
+        # SBE manual p.89: x_i = ((x_c - x_p) * (p_i - p_p) / (p_c - p_p)) + x_p
+        # n_p = 1 when n == 0 (uses next row as "previous"), else n-1.
+        p_c = _dataset[bin_variable].to_numpy()
+        p_p = np.empty_like(p_c)
+        p_p[0] = p_c[1] if len(p_c) > 1 else p_c[0]
+        p_p[1:] = p_c[:-1]
+        p_i = _dataset["midpoint"].to_numpy()
+
+        for column in _dataset.columns.difference(excluded_columns):
+            x_c = _dataset[column].to_numpy(dtype=float)
+            x_p = np.empty_like(x_c)
+            x_p[0] = x_c[1] if len(x_c) > 1 else x_c[0]
+            x_p[1:] = x_c[:-1]
+            _dataset[column] = ((x_c - x_p) * (p_i - p_p) / (p_c - p_p)) + x_p
 
         _dataset[bin_variable] = _dataset["midpoint"]
         _dataset = _dataset.drop("midpoint", axis=1)
@@ -798,7 +793,7 @@ def wild_edit(
     while upper_index <= len(data):
         flagged_data[lower_index:upper_index] = _flag_data(
             data[lower_index:upper_index],
-            flags,
+            flags[lower_index:upper_index],
             std_pass_1,
             std_pass_2,
             distance_to_mean,
@@ -813,7 +808,7 @@ def wild_edit(
         upper_index = len(data)
         flagged_data[len(data) - len(data) % scans_per_block :] = _flag_data(
             data[lower_index:upper_index],
-            flags,
+            flags[lower_index:upper_index],
             std_pass_1,
             std_pass_2,
             distance_to_mean,
@@ -849,26 +844,26 @@ def _flag_data(
     :return: The data with flag values in place of outliers
     """
 
-    data_copy = pd.Series(data.copy())
+    data_copy = data.astype(float).copy()
     flagged_data = data.copy()
 
-    for n, value in enumerate(data_copy):
-        if exclude_bad_flags and flags[n] == flag_value:
-            data_copy[n] = np.nan
+    # Pass 1: mask already-flagged scans so they don't skew statistics.
+    # flags may be the full-cast array while data is one block — truncate to match.
+    if exclude_bad_flags:
+        data_copy[flags[:len(data_copy)] == flag_value] = np.nan
 
-    mean = data_copy.mean()
-    std = data_copy.std()
+    mean = np.nanmean(data_copy)
+    std = np.nanstd(data_copy, ddof=1)
 
-    for n, value in enumerate(data_copy):
-        if abs(value - mean) >= std * std_pass_1:
-            data_copy[n] = np.nan
+    # Pass 2: mask coarse outliers
+    data_copy[np.abs(data_copy - mean) >= std * std_pass_1] = np.nan
 
-    mean = data_copy.mean()
-    std = data_copy.std()
+    mean = np.nanmean(data_copy)
+    std = np.nanstd(data_copy, ddof=1)
 
-    for n, value in enumerate(flagged_data):
-        if abs(value - mean) > std * std_pass_2 and abs(value - mean) > distance_to_mean:
-            flagged_data[n] = flag_value
+    # Pass 3: write flag value into fine outliers
+    deviation = np.abs(flagged_data - mean)
+    flagged_data[(deviation > std * std_pass_2) & (deviation > distance_to_mean)] = flag_value
 
     return flagged_data
 

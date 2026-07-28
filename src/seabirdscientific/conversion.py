@@ -12,7 +12,7 @@ import warnings
 import gsw
 import numpy as np
 from numpy.polynomial import Polynomial
-from scipy import stats
+from scipy.signal import savgol_filter, lfilter, lfilter_zi
 
 # Sea-Bird imports
 
@@ -173,21 +173,10 @@ def convert_pressure_digiquartz(
     scans_in_window = max(scans_in_window, 1)
     scans_in_window = min(scans_in_window, max_scans_in_30_seconds)
 
-    rolling_sum = compensation_voltage[0] * scans_in_window
-    modified_compensation_voltage = compensation_voltage.copy()
-
-    for i in range(0, len(compensation_voltage)):
-        if i < scans_in_window:
-            # remove a copy of 0-index value from rolling sum
-            rolling_sum -= compensation_voltage[0]
-        else:
-            # remove oldest value from rolling sum
-            rolling_sum -= compensation_voltage[i - scans_in_window]
-
-        rolling_sum += compensation_voltage[i]
-        modified_compensation_voltage[i] = (
-            rolling_sum / scans_in_window * coefs.AD590M + coefs.AD590B
-        )
+    b = np.ones(scans_in_window) / scans_in_window
+    zi = lfilter_zi(b, 1) * compensation_voltage[0]
+    rolling_mean, _ = lfilter(b, 1, compensation_voltage, zi=zi)
+    modified_compensation_voltage = rolling_mean * coefs.AD590M + coefs.AD590B
 
     # Now, calculate pressure
 
@@ -506,19 +495,17 @@ def convert_sbe43_oxygen(
     # start with all 0 for the dvdt
     dvdt_values = np.zeros(len(voltage))
     if apply_tau_correction:
-        # Calculates how many scans to have on either side of our median
-        # point, accounting for going out of index bounds
         scans_per_side = floor(window_size / 2 / sample_interval)
-        for i in range(scans_per_side, len(voltage) - scans_per_side):
-            ox_subset = voltage[i - scans_per_side : i + scans_per_side + 1]
-
-            time_subset = np.arange(
-                0, len(ox_subset) * sample_interval, sample_interval, dtype=float
+        wlen = 2 * scans_per_side + 1
+        if wlen >= 3 and wlen <= len(voltage):
+            # Savitzky-Golay first derivative on uniform grid is equivalent
+            # to linregress slope on each window, but fully vectorised.
+            dvdt_values = savgol_filter(
+                voltage, wlen, polyorder=1, deriv=1, delta=sample_interval
             )
-
-            result = stats.linregress(time_subset, ox_subset)
-
-            dvdt_values[i] = result.slope
+            # match original: boundary scans where full window doesn't fit are 0
+            dvdt_values[:scans_per_side] = 0.0
+            dvdt_values[len(voltage) - scans_per_side:] = 0.0
 
     correct_ox_voltages = voltage.copy()
     if apply_hysteresis_correction:

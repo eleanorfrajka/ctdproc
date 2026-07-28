@@ -1,3 +1,6 @@
+# Local config files with machine-specific paths
+proc/config.local.yaml
+
 # Created by https://www.toptal.com/developers/gitignore/api/python
 # Edit at https://www.toptal.com/developers/gitignore?templates=python
 # Ignorar archivos de datos científicos pesados
