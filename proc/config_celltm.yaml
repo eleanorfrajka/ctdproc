@@ -1,0 +1,27 @@
+constants:
+  name: "MIXSED2"
+  ind: [28, 48]               #choose e.g., 10 profiles 
+  sample_interval: 1/24
+
+
+features:
+  - name: "align"
+    variables: ["conductivity","conductivity2"]
+    offset: [0.000,0.000]  # 
+  - name: "wild_edit"
+    variables: ["temperature","temperature2","conductivity","conductivity2","pressure"]
+    std_pass_1: [2.0,2.0,2.0,2.0,2.0]
+    std_pass_2: [20.0,20.0,20.0,20.0,20.0]
+    scans_per_block: [100,100,100,100,100]
+    distance_to_mean: [0.0,0.0,0.0,0.0,0.0]
+  - name: "low_filter"
+    variables:  ["pressure"]
+    time_constant: [0.03]
+
+
+celltm_settings:
+  temperature_touse: ["temperature","temperature2"]    # 
+  conductivity_touse: ["conductivity","conductivity2"]    # 
+  bin_temperature: [0.01,0.01]   #in °C degrees
+  pressure_upper: [50.0,50.0]      # You have to choose a range of depth with different values of temperature 
+  pressure_lower: [200.0,200.0]    # For example, you can choose the thermocline
