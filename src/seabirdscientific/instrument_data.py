@@ -402,38 +402,45 @@ def read_hex_file(
     if enabled_sensors is None:
         enabled_sensors = []
 
-    rows = []
+    # Collect data lines in one pass so we know the count before allocating
+    data_lines = []
     is_data = False
-
     with open(filepath, "r", encoding="latin-1") as file:
         for line in file:
-
-            # start of data section
             if line.startswith("*END*"):
                 is_data = True
                 continue
-
-            if not is_data:
+            if not is_data or not line.strip():
                 continue
+            data_lines.append(line)
 
-            # skip empty lines
-            if not line.strip():
-                continue
+    if not data_lines:
+        return pd.DataFrame()
 
-            # parse one scan
-            hex_data = read_hex(
-                instrument_type,
-                line,
-                enabled_sensors,
-                moored_mode,
-                is_shallow,
-                frequency_channels_suppressed,
-                voltage_words_suppressed,
-            )
+    # Parse the first line to discover column names and types
+    first_row = read_hex(
+        instrument_type, data_lines[0], enabled_sensors,
+        moored_mode, is_shallow, frequency_channels_suppressed, voltage_words_suppressed,
+    )
 
-            rows.append(hex_data)
+    n = len(data_lines)
+    arrays = {}
+    for k, v in first_row.items():
+        if isinstance(v, datetime):
+            arrays[k] = [None] * n
+        else:
+            arrays[k] = np.empty(n, dtype=float)
+        arrays[k][0] = v
 
-    return pd.DataFrame.from_records(rows)
+    for i in range(1, n):
+        row = read_hex(
+            instrument_type, data_lines[i], enabled_sensors,
+            moored_mode, is_shallow, frequency_channels_suppressed, voltage_words_suppressed,
+        )
+        for k, v in row.items():
+            arrays[k][i] = v
+
+    return pd.DataFrame(arrays)
 
 def preallocate_dataframe(
     instrument_type: InstrumentType,

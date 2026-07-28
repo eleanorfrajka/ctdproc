@@ -1,6 +1,7 @@
 import logging
 
 import gsw
+import numpy as np
 import seabirdscientific.processing as proc
 from .processing import filt_interp
 
@@ -134,17 +135,20 @@ def apply_loop_edit(data, step, sample_interval, bad_flag_value):
 
     text = []
 
-    min_velocity = step.get("min_velocity")
-    window_size = step.get("window_size")
-    mean_speed_percent = step.get("mean_speed_percent")
-    remove_surface_soak = step.get("remove_surface_soak")
-    min_soak_depth = step.get("min_soak_depth")
-    max_soak_depth = step.get("max_soak_depth")
-    use_deck_pressure_offset = step.get("use_deck_pressure_offset")
+    def _scalar(val):
+        return val[0] if isinstance(val, list) else val
+
+    min_velocity = _scalar(step.get("min_velocity"))
+    window_size = _scalar(step.get("window_size"))
+    mean_speed_percent = _scalar(step.get("mean_speed_percent"))
+    remove_surface_soak = _scalar(step.get("remove_surface_soak"))
+    min_soak_depth = _scalar(step.get("min_soak_depth"))
+    max_soak_depth = _scalar(step.get("max_soak_depth"))
+    use_deck_pressure_offset = _scalar(step.get("use_deck_pressure_offset"))
 
     data["flag"] = proc.loop_edit_pressure(
         pressure=data["pressure"].values,
-        latitude=data["latitude"].values,
+        latitude=float(np.nanmedian(data["latitude"].values)),
         flag=data["flag"].values,
         sample_interval=sample_interval,
         min_velocity_type=proc.MinVelocityType.FIXED,
