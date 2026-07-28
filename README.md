@@ -104,3 +104,39 @@ features:
 * **`ind`**: Defines the file iteration range. The pipeline loops through data indexes (e.g., from cast `030` to cast `038`).
 * **`convert`**: When enabled (`'yes'`), it translates raw engineering files into nominal 24 Hz `.cnv` profiles using internal calibrations.
 * **`features`**: A list of data processing steps. The pipeline will dynamically search for and execute only the modules explicitly listed and uncommented in this section.
+
+
+---
+
+## Diagnostic Tools
+
+### CTD Alignment Finder (`ctdalign_finder`)
+Computes temporal lags between sensors (e.g., temperature and conductivity) across profiles to optimize your pipeline coefficients.
+
+#### 1. Configuration (`proc/config_align.yaml`)
+Create an independent configuration file using this layout:
+```yaml
+constants:
+  sample_interval: 1/24
+  name: "MIXSED2"
+  ind: [30, 38]
+
+alignment_settings:
+  variable_lead: ["temperature"]
+  variable_lag: ["conductivity"]
+  max_lag: [15]
+  pressure_upper: [30.0]
+  pressure_lower: [500.0]
+```
+
+#### 2. Execution
+Run the submodule from your `proc/` directory:
+```bash
+cd proc
+python -m ctdproc.ctdalign_finder config_align.yaml
+```
+
+#### 3. Output
+Generates **`proc/alignment_report.csv`** containing:
+* **Detailed Log**: Individual lag offsets (`lag_dn`, `lag_up`) per cast.
+* **Campaign Averages**: Global mean values to paste into your production `config.yaml`.
