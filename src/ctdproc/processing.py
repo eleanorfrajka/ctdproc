@@ -302,3 +302,44 @@ def find_opt_alp_tat(
             )
     return max_value
 
+
+def bottle_avg(data_ctd,data_bl,scan_offset,scan_duration,samp_int):
+    scanpsecond=samp_int;
+    data_vec=np.zeros((len(data_bl['start_scan']),8))
+    columnas = [
+        'bottle', 
+        'conductivity', 
+        'conductivity2', 
+        'temperature', 
+        'temperature2', 
+        'latitude', 
+        'longitude', 
+        'pressure'
+    ]
+    
+    for j,k in enumerate(data_bl['start_scan']):
+        init_scan=k-scanpsecond*scan_offset
+        finl_scan=init_scan+scanpsecond*scan_duration
+        cond_blst=data_ctd['conductivity'][ (data_ctd['scan']<=finl_scan) & (data_ctd['scan']>=init_scan)].mean()
+        pres_blst=data_ctd['pressure'][ (data_ctd['scan']<=finl_scan) & (data_ctd['scan']>=init_scan)].mean()
+        temp_blst=data_ctd['temperature'][ (data_ctd['scan']<=finl_scan) & (data_ctd['scan']>=init_scan)].mean()
+        cond_blst2=data_ctd['conductivity2'][ (data_ctd['scan']<=finl_scan) & (data_ctd['scan']>=init_scan)].mean()
+        temp_blst2=data_ctd['temperature2'][ (data_ctd['scan']<=finl_scan) & (data_ctd['scan']>=init_scan)].mean()
+        lat_blst=data_ctd['latitude'][ (data_ctd['scan']<=finl_scan) & (data_ctd['scan']>=init_scan)].mean()
+        lon_blst=data_ctd['longitude'][ (data_ctd['scan']<=finl_scan) & (data_ctd['scan']>=init_scan)].mean()
+
+        
+ 
+        
+        data_vec[j,:]=[j+1,cond_blst,cond_blst2,temp_blst,temp_blst2,lat_blst,lon_blst,pres_blst]
+        df_bottles = pd.DataFrame(data_vec, columns=columnas)
+
+    return df_bottles  
+
+def slope_for_correction(a,b):
+    mask_nan = ~np.isnan(a) & ~np.isnan(b)
+    aaS = np.sum(a[mask_nan]*a[mask_nan])
+    abS = np.sum(a[mask_nan]*b[mask_nan])
+    m = abS/aaS
+    return m
+        
