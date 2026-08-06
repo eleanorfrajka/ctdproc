@@ -3,6 +3,7 @@
 import logging
 logger = logging.getLogger(__name__)
 import datetime as datetime
+import pandas as pd
 
 
 def extract_head_hex(
@@ -37,3 +38,14 @@ def add_timestamp(ref_time,header,scans):
     julian_stamp_time=((base_tojul + (scans / 24.0)) / 86400.0) + 1.0
     return julian_stamp_time
 
+
+def bl_reader(bl_file):
+    df_bl= pd.read_csv(
+        bl_file,
+        sep = ',',
+        comment = '*',
+        header = 1,
+        skipinitialspace = True,
+        names = ['sequence','position','datetime_utc','start_scan','end_scan'],
+    )
+    return df_bl

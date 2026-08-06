@@ -1,0 +1,11 @@
+constants:
+  sample_interval: 1/24
+  name: "MIXSED2"
+
+slope_settings:
+  bottle_sal_file: "Bottle_Salinity.csv" #
+  scan_offset: [2,2]
+  scan_duration: [5,5]
+  temperature_sensors: ["temperature", "temperature2"]
+  conductivity_sensors: ["conductivity", "conductivity2"]
+

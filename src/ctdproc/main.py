@@ -43,6 +43,7 @@ def CTD_process(yaml_file):
     apply_celltm,
     apply_loop_edit,
     apply_bin,
+    apply_slope_correction,
     )
     from pathlib import Path
 
@@ -119,6 +120,9 @@ def CTD_process(yaml_file):
                 data, log = apply_celltm(data,step,sample_interval,)
                 text_process.extend(log)
 
+            elif func_name == 'slope_corr':
+                data, log = apply_slope_correction(data,step,)
+                text_process.extend(log)
     
             elif func_name == 'loop_edit':
                 data, log = apply_loop_edit(data,step,sample_interval,BAD_FLAG_VALUE,)
@@ -187,5 +191,5 @@ def CTD_process(yaml_file):
                 index=False
             )           
 
-    print('procesado_'+str(j).zfill(3))
+        print('processed_'+str(j).zfill(3))
 

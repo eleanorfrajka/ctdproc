@@ -88,6 +88,9 @@ def apply_wild_edit(data, step, bad_flag_value):
     text.append("\n")
 
     return data, text
+    
+    
+
 
 def apply_celltm(data, step, sample_interval):
 
@@ -128,6 +131,33 @@ def apply_celltm(data, step, sample_interval):
     text.append("\n")
 
 
+    return data, text
+
+def apply_slope_correction(data,step):
+    text = []
+    data_copy=data.copy()
+    for var, m in zip(
+        step.get('variables',[]),
+        step.get('slope'),
+    ):
+        
+        if var == "conductivity":
+            temp_var = "temperature"
+            sal_var = "salinity"
+        else:
+            temp_var = "temperature2"
+            sal_var = "salinity2"        
+        data[var]=m*data_copy[var]
+        data[sal_var] = gsw.SP_from_C(
+            10 * data[var].values,
+            t=data[temp_var].values,
+            p=data["pressure"].values
+        )
+        
+        text.append(f"* slope_correction {var}\n")
+        text.append(f"* slope_correction m =  {m}\n")
+
+    text.append("\n")
     return data, text
 
 

@@ -4,22 +4,22 @@ constants:
   ind: [30,31] #expect name_000.hex
   convert: 'yes'
   time_ref: 'System UTC'
-  data_dir: "path/to/raw"        # override in config.local.yaml
-  output_dir: "path/to/output"   # override in config.local.yaml
+  data_dir: "../data/"        # override in config.local.yaml
+#  output_dir: "/"   # override in config.local.yaml
 
 features:
   - name: "align"
     variables: ["conductivity","conductivity2"]
-    offset: [0.073,0.073]  # 
+    offset: [0.0,0.0]  # 
   - name: "wild_edit"
     variables: ["temperature","temperature2","conductivity","conductivity2","pressure"]
     std_pass_1: [2.0,2.0,2.0,2.0,2.0]
-    std_pass_2: [5.0,5.0,5.0,5.0,5.0]
+    std_pass_2: [20.0,20.0,20.0,20.0,20.0]
     scans_per_block: [100,100,100,100,100]
     distance_to_mean: [0.0,0.0,0.0,0.0,0.0]
   - name: "low_filter"
-    variables:  ["pressure","temperature","conductivity"]
-    time_constant: [0.03,0.03,0.03]
+    variables:  ["pressure"]
+    time_constant: [0.15]
   - name: "celltm"
     variables: ["conductivity","conductivity2"]
     amplitude: [0.03,0.03]
@@ -32,7 +32,10 @@ features:
     min_soak_depth: [5]
     max_soak_depth: [20]
     use_deck_pressure_offset: [False]
+  - name: "slope_corr"
+    variables: ["conductivity","conductivity2"]
+    slope: [1.0000405834790034,0.9999692838152715]
   - name: "bin"
-    bin_type: ["scans","pressure"]
-    bin_size: [24.0,1.0]
-    type_profile: ["BOTH",'DOWN']
+    bin_type: ["pressure"]
+    bin_size: [1.0]
+    type_profile: ['DOWN']
