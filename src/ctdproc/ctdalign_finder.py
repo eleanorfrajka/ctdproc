@@ -56,7 +56,7 @@ def ctdalign_finder(yaml_file):
 
             func_name = step.get('name')
             _,lg_dn,_,lg_up=crosshigh(data,['pressure',var_lead,var_lag],
-                                      max_lag,pre_up,pre_lo,sample_interval,False)
+                                      max_lag,pre_up,pre_lo,sample_interval,True)
 
                 #allocate lg_up,lg_dn
 
