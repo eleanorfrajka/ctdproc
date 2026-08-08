@@ -84,8 +84,15 @@ from seabirdscientific.processing import _flag_data as _flag_data_new
 
 
 def _bin_average_interp_new(dataset, bin_variable):
-    """Runs only the refactored interpolation block from bin_average."""
+    """Runs only the refactored interpolation block from bin_average.
+
+    This is a local copy of the vectorized interpolation embedded in
+    seabirdscientific.processing.bin_average (not exported as a standalone
+    function), kept here to allow direct old-vs-new comparison.
+    """
     dataset = dataset.copy()
+    if len(dataset) == 0:
+        return dataset
     excluded_columns = ["nbin", "flag", "bin_number", bin_variable, "midpoint"]
 
     p_c = dataset[bin_variable].to_numpy()
@@ -230,6 +237,20 @@ def test_bin_interp_single_row():
     # new code should not raise
     result = _bin_average_interp_new(df, "pressure")
     assert result is not None
+
+
+def test_bin_interp_equal_consecutive_pressures():
+    """Equal consecutive bin pressures: original raises ZeroDivisionError; vectorized produces inf.
+
+    This documents a deliberate behavior difference — equal consecutive bin
+    pressures should not occur in practice (each bin has a unique pressure).
+    """
+    df = make_bin_dataset(n=3)
+    df.loc[1, "pressure"] = df.loc[0, "pressure"]
+    with pytest.raises((ZeroDivisionError, IndexError)):
+        _bin_average_interp_original(df, "pressure")
+    result = _bin_average_interp_new(df, "pressure")
+    assert np.any(np.isinf(result["temperature"].values))
 
 
 def test_bin_interp_uneven_pressure():

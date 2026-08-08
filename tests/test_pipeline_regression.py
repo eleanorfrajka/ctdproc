@@ -15,7 +15,6 @@ then re-commit the updated reference files.
 """
 
 import sys
-import tempfile
 import warnings
 from io import StringIO
 from pathlib import Path
@@ -32,68 +31,22 @@ REF_DIR = FIXTURES / "reference"
 
 sys.path.insert(0, str(ROOT / "src"))
 
-from ctdproc.load import load_raw_data, convert_data
+from ctdproc.load import convert_data, load_raw_data
 from ctdproc.pipeline import (
     apply_align,
-    apply_low_filter,
-    apply_wild_edit,
+    apply_bin,
     apply_celltm,
     apply_loop_edit,
-    apply_bin,
+    apply_low_filter,
+    apply_wild_edit,
 )
 
 CAST = "MIXSED2_000"
 SAMPLE_DT = 1 / 24
 BAD_FLAG = np.float64(-9.99e-29)
 
-FEATURES = [
-    {
-        "name": "align",
-        "variables": ["conductivity", "conductivity2"],
-        "offset": [0.073, 0.073],
-    },
-    {
-        "name": "wild_edit",
-        "variables": [
-            "temperature",
-            "temperature2",
-            "conductivity",
-            "conductivity2",
-            "pressure",
-        ],
-        "std_pass_1": [2.0, 2.0, 2.0, 2.0, 2.0],
-        "std_pass_2": [5.0, 5.0, 5.0, 5.0, 5.0],
-        "scans_per_block": [100, 100, 100, 100, 100],
-        "distance_to_mean": [0.0, 0.0, 0.0, 0.0, 0.0],
-    },
-    {
-        "name": "low_filter",
-        "variables": ["pressure", "temperature", "conductivity"],
-        "time_constant": [0.03, 0.03, 0.03],
-    },
-    {
-        "name": "celltm",
-        "variables": ["conductivity", "conductivity2"],
-        "amplitude": [0.03, 0.03],
-        "time_constant": [7.0, 7.0],
-    },
-    {
-        "name": "loop_edit",
-        "min_velocity": [0.25],
-        "window_size": [3],
-        "mean_speed_percent": [20],
-        "remove_surface_soak": [True],
-        "min_soak_depth": [5],
-        "max_soak_depth": [20],
-        "use_deck_pressure_offset": [False],
-    },
-    {
-        "name": "bin",
-        "bin_type": ["scans", "pressure"],
-        "bin_size": [24.0, 1.0],
-        "type_profile": ["BOTH", "DOWN"],
-    },
-]
+with open(FIXTURES / "config.yaml") as _f:
+    FEATURES = yaml.safe_load(_f)["features"]
 
 STEPS = {s["name"]: s for s in FEATURES}
 

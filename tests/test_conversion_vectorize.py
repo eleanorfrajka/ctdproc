@@ -11,9 +11,8 @@ from math import floor
 from pathlib import Path
 
 import numpy as np
-import pytest
 from scipy import stats
-from scipy.signal import savgol_filter, lfilter, lfilter_zi
+from scipy.signal import lfilter, lfilter_zi, savgol_filter
 
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / "src"))
@@ -101,7 +100,12 @@ def _rolling_mean_old(compensation_voltage, scans_in_window):
 
 
 def _tau_correction_new(voltage, sample_interval, window_size=1):
-    """Savitzky-Golay first derivative — equivalent to linregress on uniform grid."""
+    """Savitzky-Golay first derivative — equivalent to linregress on uniform grid.
+
+    Local copy of the algorithm now inlined in seabirdscientific.conversion
+    (not exported as a standalone function). Kept here to allow direct
+    comparison against the original loop implementation.
+    """
     scans_per_side = floor(window_size / 2 / sample_interval)
     wlen = 2 * scans_per_side + 1
     if wlen < 3 or wlen > len(voltage):
@@ -114,7 +118,12 @@ def _tau_correction_new(voltage, sample_interval, window_size=1):
 
 
 def _rolling_mean_new(compensation_voltage, scans_in_window):
-    """Causal rolling mean via scipy lfilter with edge initial condition."""
+    """Causal rolling mean via scipy lfilter with edge initial condition.
+
+    Local copy of the algorithm now inlined in seabirdscientific.conversion
+    (not exported as a standalone function). Kept here to allow direct
+    comparison against the original loop implementation.
+    """
     b = np.ones(scans_in_window) / scans_in_window
     zi = lfilter_zi(b, 1) * compensation_voltage[0]
     result, _ = lfilter(b, 1, compensation_voltage, zi=zi)
