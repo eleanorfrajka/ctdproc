@@ -87,7 +87,7 @@ def CTD_process(yaml_file):
         head=[]
         head_coeff=[]
         head=extract_head_hex(data_dir / (base + '.hex'))
-        head_coeff=extract_head_hex(data_dir / (base + '.XMLCON'))
+        head_coeff=extract_head_hex(data_dir / (base + '.xmlcon'))
         text_content =[]
         text_content.extend(head)
         text_content.append("* \n")
