@@ -90,9 +90,9 @@ def cellTM_finder(yaml_file):
             #CHECK HERE TO MODIFIY THE NAME OF THIS FUNCTION
             MAT=find_opt_alp_tat_fast(alpha_range,tau_range,data,
                                       ['pressure',T_to_use,
-                                       C_to_use,'corrected_sal'],pre_up,pre_lo,bin_T)
+                                       C_to_use,'corrected_sal'],pre_up,pre_lo,bin_T,sample_interval)
 
-            row_idx, col_idx = np.unravel_index(np.argmin(MAT), MAT.shape)
+            row_idx, col_idx = np.unravel_index(np.nanargmin(MAT), MAT.shape)
             best_alpha = alpha_range[row_idx]
             best_tau = tau_range[col_idx]
             min_val = MAT[row_idx, col_idx]
@@ -141,7 +141,7 @@ import sys
 def main():
     if len(sys.argv) != 2:
 
-        print("Usage: python -m ctdproc.cellTM_finder config_align.yaml")
+        print("Usage: python -m ctdproc.cellTM_finder config_celltm.yaml")
         sys.exit(1)
         
     yaml_file = sys.argv[1]

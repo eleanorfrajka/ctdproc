@@ -181,7 +181,8 @@ def find_opt_alp_tat_fast(
     temp_bins = np.arange(max_min, min_max + tbin, tbin)
 
 
-    error_matrix = np.full((len(alpha_r), len(tau_r)), np.nan)
+   # error_matrix = np.zeros((len(alpha_r), len(tau_r)))
+    error_matrix = np.full((len(alpha_r), len(tau_r)),np.nan)
 
 
     for r, alpha in enumerate(alpha_r):
