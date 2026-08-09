@@ -1,11 +1,16 @@
 # Local config files with machine-specific paths
 proc/config.local.yaml
 
+# macOS metadata
+.DS_Store
+
 # Created by https://www.toptal.com/developers/gitignore/api/python
 # Edit at https://www.toptal.com/developers/gitignore?templates=python
+# Ignore large scientific data files
 # Ignorar archivos de datos científicos pesados
 data/
 
+# Ignore Jupyter notebooks for now
 # Ignorar cuadernos de Jupyter por ahora
 notebooks/
 

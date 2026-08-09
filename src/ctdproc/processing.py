@@ -197,7 +197,6 @@ def find_opt_alp_tat_fast(
                 amplitude=alpha, time_constant=tau, sample_interval=sample_interval
             )
 
-            # 
             error_matrix[r, c] = alp_tau_fast(
                 p_dn, t_dn, c_dn_corr,
                 p_up, t_up, c_up_corr,
