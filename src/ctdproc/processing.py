@@ -144,6 +144,7 @@ def find_opt_alp_tat_fast(
     pi: float,
     pf: float,
     tbin: float,
+    sample_interval: float,
 ) -> np.ndarray:
     """Try to find the best alpha and Tau values."""
 
@@ -177,10 +178,10 @@ def find_opt_alp_tat_fast(
 
     min_max = np.min([t_dn.max(), t_up.max()])
     max_min = np.max([t_dn.min(), t_up.min()])
-    temp_bins = np.arange(max_min, min_max, tbin)
+    temp_bins = np.arange(max_min, min_max + tbin, tbin)
 
 
-    error_matrix = np.zeros((len(alpha_r), len(tau_r)))
+    error_matrix = np.full((len(alpha_r), len(tau_r)), np.nan)
 
 
     for r, alpha in enumerate(alpha_r):
@@ -188,14 +189,13 @@ def find_opt_alp_tat_fast(
 
             c_dn_corr = proc.cell_thermal_mass(
                 temperature_C=t_dn, conductivity_Sm=c_dn,
-                amplitude=alpha, time_constant=tau, sample_interval=1/24
+                amplitude=alpha, time_constant=tau, sample_interval=sample_interval
             )
             c_up_corr = proc.cell_thermal_mass(
                 temperature_C=t_up, conductivity_Sm=c_up,
-                amplitude=alpha, time_constant=tau, sample_interval=1/24
+                amplitude=alpha, time_constant=tau, sample_interval=sample_interval
             )
 
-            # 
             error_matrix[r, c] = alp_tau_fast(
                 p_dn, t_dn, c_dn_corr,
                 p_up, t_up, c_up_corr,

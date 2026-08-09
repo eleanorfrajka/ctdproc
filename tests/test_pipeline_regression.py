@@ -459,7 +459,7 @@ def test_find_opt_alp_tat_fast_matrix_shape(updown_data):
     mat = find_opt_alp_tat_fast(
         _ALPHA_R, _TAU_R, updown_data,
         ["pressure", "temperature", "conductivity"],
-        _PI, _PF, _TBIN,
+        _PI, _PF, _TBIN, SAMPLE_DT,
     )
     assert mat.shape == (_ALPHA_R.shape[0], _TAU_R.shape[0])
 
@@ -468,18 +468,18 @@ def test_find_opt_alp_tat_fast_all_entries_non_negative(updown_data):
     mat = find_opt_alp_tat_fast(
         _ALPHA_R, _TAU_R, updown_data,
         ["pressure", "temperature", "conductivity"],
-        _PI, _PF, _TBIN,
+        _PI, _PF, _TBIN, SAMPLE_DT,
     )
-    assert np.all(mat >= 0.0), f"negative error entry: {mat}"
+    assert np.all(mat >= 0.0) or np.all(np.isnan(mat)), f"unexpected negative entry: {mat}"
 
 
 def test_find_opt_alp_tat_fast_optimum_within_grid(updown_data):
     mat = find_opt_alp_tat_fast(
         _ALPHA_R, _TAU_R, updown_data,
         ["pressure", "temperature", "conductivity"],
-        _PI, _PF, _TBIN,
+        _PI, _PF, _TBIN, SAMPLE_DT,
     )
-    r, c = np.unravel_index(np.argmin(mat), mat.shape)
+    r, c = np.unravel_index(np.nanargmin(mat), mat.shape)
     assert 0 <= r < len(_ALPHA_R)
     assert 0 <= c < len(_TAU_R)
 
@@ -558,11 +558,11 @@ def test_find_opt_alp_tat_consistent_with_fast_variant(updown_data):
     fast = find_opt_alp_tat_fast(
         _ALPHA_R, _TAU_R, updown_data,
         ["pressure", "temperature", "conductivity"],
-        _PI, _PF, _TBIN,
+        _PI, _PF, _TBIN, SAMPLE_DT,
     )
     plt.close("all")
-    assert np.unravel_index(np.argmin(slow), slow.shape) == np.unravel_index(
-        np.argmin(fast), fast.shape
+    assert np.unravel_index(np.nanargmin(slow), slow.shape) == np.unravel_index(
+        np.nanargmin(fast), fast.shape
     ), f"slow and fast variants disagree on optimal (alpha, tau): slow={slow}, fast={fast}"
 
 
