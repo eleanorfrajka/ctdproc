@@ -240,17 +240,18 @@ def test_bin_interp_single_row():
 
 
 def test_bin_interp_equal_consecutive_pressures():
-    """Equal consecutive bin pressures: original raises ZeroDivisionError; vectorized produces inf.
+    """Equal consecutive bin pressures produce inf in both implementations (numpy float division).
 
-    This documents a deliberate behavior difference — equal consecutive bin
-    pressures should not occur in practice (each bin has a unique pressure).
+    Equal consecutive bin pressures should not occur in practice — each bin
+    has a unique pressure. Both old and new silently produce inf because the
+    values are numpy floats (Python float would raise ZeroDivisionError).
     """
     df = make_bin_dataset(n=3)
     df.loc[1, "pressure"] = df.loc[0, "pressure"]
-    with pytest.raises((ZeroDivisionError, IndexError)):
-        _bin_average_interp_original(df, "pressure")
-    result = _bin_average_interp_new(df, "pressure")
-    assert np.any(np.isinf(result["temperature"].values))
+    orig = _bin_average_interp_original(df, "pressure")
+    new = _bin_average_interp_new(df, "pressure")
+    assert np.any(np.isinf(orig["temperature"].values))
+    assert np.any(np.isinf(new["temperature"].values))
 
 
 def test_bin_interp_uneven_pressure():

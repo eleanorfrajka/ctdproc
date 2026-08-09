@@ -130,83 +130,89 @@ def _rolling_mean_new(compensation_voltage, scans_in_window):
     return result
 
 
+def _scans_in_window():
+    max_scans = 720
+    w = floor(30 / SAMPLE_INTERVAL)
+    return max(1, min(w, max_scans))
+
+
 # ===========================================================================
-# Tests
+# Tests: tau correction
 # ===========================================================================
 
 
-class TestTauCorrection:
-    def test_dvdt_interior_identical(self):
-        """Interior dvdt values must match to float64 precision."""
-        scans_per_side = floor(1.0 / 2 / SAMPLE_INTERVAL)
-        old = _tau_correction_old(VOLTAGE, SAMPLE_INTERVAL, window_size=1)
-        new = _tau_correction_new(VOLTAGE, SAMPLE_INTERVAL, window_size=1)
-        interior = slice(scans_per_side, len(VOLTAGE) - scans_per_side)
-        # max absolute difference is ~2e-16 (machine epsilon) from
-        # different fp paths: linregress QR vs savgol convolution coefficients.
-        # Use atol to handle near-zero dvdt values where rtol alone would fail.
-        np.testing.assert_allclose(
-            old[interior],
-            new[interior],
-            rtol=1e-8,
-            atol=1e-13,
-            err_msg="dvdt mismatch on interior scans",
-        )
-
-    def test_dvdt_boundary_zeros(self):
-        """Boundary scans must be zero in both implementations."""
-        scans_per_side = floor(1.0 / 2 / SAMPLE_INTERVAL)
-        old = _tau_correction_old(VOLTAGE, SAMPLE_INTERVAL, window_size=1)
-        new = _tau_correction_new(VOLTAGE, SAMPLE_INTERVAL, window_size=1)
-        assert np.all(old[:scans_per_side] == 0.0), "old boundary not zero"
-        assert np.all(new[:scans_per_side] == 0.0), "new boundary not zero"
-
-    def test_full_oxygen_array_unchanged(self):
-        """End-to-end oxygen conversion must be identical."""
-        old_dvdt = _tau_correction_old(VOLTAGE, SAMPLE_INTERVAL)
-        new_dvdt = _tau_correction_new(VOLTAGE, SAMPLE_INTERVAL)
-
-        old_ox = conv._convert_sbe43_oxygen(
-            VOLTAGE, TEMP_C, PRESSURE, SALINITY, COEFS_OX, old_dvdt
-        )
-        new_ox = conv._convert_sbe43_oxygen(
-            VOLTAGE, TEMP_C, PRESSURE, SALINITY, COEFS_OX, new_dvdt
-        )
-
-        np.testing.assert_allclose(
-            old_ox,
-            new_ox,
-            rtol=1e-10,
-            err_msg="oxygen array differs after tau correction swap",
-        )
+def test_dvdt_interior_identical():
+    """Interior dvdt values must match to float64 precision."""
+    scans_per_side = floor(1.0 / 2 / SAMPLE_INTERVAL)
+    old = _tau_correction_old(VOLTAGE, SAMPLE_INTERVAL, window_size=1)
+    new = _tau_correction_new(VOLTAGE, SAMPLE_INTERVAL, window_size=1)
+    interior = slice(scans_per_side, len(VOLTAGE) - scans_per_side)
+    # max absolute difference is ~2e-16 (machine epsilon) from
+    # different fp paths: linregress QR vs savgol convolution coefficients.
+    # Use atol to handle near-zero dvdt values where rtol alone would fail.
+    np.testing.assert_allclose(
+        old[interior],
+        new[interior],
+        rtol=1e-8,
+        atol=1e-13,
+        err_msg="dvdt mismatch on interior scans",
+    )
 
 
-class TestRollingMean:
-    def _scans_in_window(self):
-        max_scans = 720
-        w = floor(30 / SAMPLE_INTERVAL)
-        return max(1, min(w, max_scans))
+def test_dvdt_boundary_zeros():
+    """Boundary scans must be zero in both implementations."""
+    scans_per_side = floor(1.0 / 2 / SAMPLE_INTERVAL)
+    old = _tau_correction_old(VOLTAGE, SAMPLE_INTERVAL, window_size=1)
+    new = _tau_correction_new(VOLTAGE, SAMPLE_INTERVAL, window_size=1)
+    assert np.all(old[:scans_per_side] == 0.0), "old boundary not zero"
+    assert np.all(new[:scans_per_side] == 0.0), "new boundary not zero"
 
-    def test_rolling_mean_identical(self):
-        """Vectorised rolling mean must exactly match the original loop."""
-        w = self._scans_in_window()
-        old = _rolling_mean_old(COMP_VOLT, w)
-        new = _rolling_mean_new(COMP_VOLT, w)
-        np.testing.assert_allclose(
-            old, new, rtol=1e-12, err_msg=f"rolling mean mismatch (window={w})"
-        )
 
-    def test_pressure_array_unchanged(self):
-        """Full pressure conversion must produce the same dbar values."""
-        # Run the current (loop) implementation
-        old_pressure = conv.convert_pressure_digiquartz(
-            _raw["digiquartz pressure"],
-            _raw["temperature compensation"],
-            COEFS_PR,
-            "dbar",
-            SAMPLE_INTERVAL,
-        )
-        # After the fix lands in conversion.py this test will keep passing;
-        # for now both call the same function so this is a smoke test.
-        assert len(old_pressure) == len(COMP_VOLT)
-        assert not np.any(np.isnan(old_pressure))
+def test_full_oxygen_array_unchanged():
+    """End-to-end oxygen conversion must be identical."""
+    old_dvdt = _tau_correction_old(VOLTAGE, SAMPLE_INTERVAL)
+    new_dvdt = _tau_correction_new(VOLTAGE, SAMPLE_INTERVAL)
+
+    old_ox = conv._convert_sbe43_oxygen(
+        VOLTAGE, TEMP_C, PRESSURE, SALINITY, COEFS_OX, old_dvdt
+    )
+    new_ox = conv._convert_sbe43_oxygen(
+        VOLTAGE, TEMP_C, PRESSURE, SALINITY, COEFS_OX, new_dvdt
+    )
+
+    np.testing.assert_allclose(
+        old_ox,
+        new_ox,
+        rtol=1e-10,
+        err_msg="oxygen array differs after tau correction swap",
+    )
+
+
+# ===========================================================================
+# Tests: rolling mean
+# ===========================================================================
+
+
+def test_rolling_mean_identical():
+    """Vectorised rolling mean must exactly match the original loop."""
+    w = _scans_in_window()
+    old = _rolling_mean_old(COMP_VOLT, w)
+    new = _rolling_mean_new(COMP_VOLT, w)
+    np.testing.assert_allclose(
+        old, new, rtol=1e-12, err_msg=f"rolling mean mismatch (window={w})"
+    )
+
+
+def test_pressure_array_unchanged():
+    """Full pressure conversion must produce the same dbar values."""
+    old_pressure = conv.convert_pressure_digiquartz(
+        _raw["digiquartz pressure"],
+        _raw["temperature compensation"],
+        COEFS_PR,
+        "dbar",
+        SAMPLE_INTERVAL,
+    )
+    # After the fix lands in conversion.py this test will keep passing;
+    # for now both call the same function so this is a smoke test.
+    assert len(old_pressure) == len(COMP_VOLT)
+    assert not np.any(np.isnan(old_pressure))
